@@ -30,7 +30,12 @@ import org.apache.skywalking.oap.server.core.analysis.Stream;
 import org.apache.skywalking.oap.server.core.analysis.metrics.Metrics;
 import org.apache.skywalking.oap.server.core.analysis.worker.MetricsStreamProcessor;
 import org.apache.skywalking.oap.server.core.remote.grpc.proto.RemoteData;
+import org.apache.skywalking.oap.server.core.storage.ShardingAlgorithm;
+import org.apache.skywalking.oap.server.core.storage.StorageID;
+import org.apache.skywalking.oap.server.core.storage.annotation.BanyanDB;
 import org.apache.skywalking.oap.server.core.storage.annotation.Column;
+import org.apache.skywalking.oap.server.core.storage.annotation.ElasticSearch;
+import org.apache.skywalking.oap.server.core.storage.annotation.SQLDatabase;
 import org.apache.skywalking.oap.server.core.storage.type.Convert2Entity;
 import org.apache.skywalking.oap.server.core.storage.type.Convert2Storage;
 import org.apache.skywalking.oap.server.core.storage.type.StorageBuilder;
@@ -45,6 +50,7 @@ import static org.apache.skywalking.oap.server.core.source.DefaultScopeDefine.SE
     "serviceId",
     "name"
 })
+@SQLDatabase.Sharding(shardingAlgorithm = ShardingAlgorithm.NO_SHARDING)
 public class InstanceTraffic extends Metrics {
     public static final String INDEX_NAME = "instance_traffic";
     public static final String SERVICE_ID = "service_id";
@@ -57,11 +63,14 @@ public class InstanceTraffic extends Metrics {
     @Setter
     @Getter
     @Column(columnName = SERVICE_ID)
+    @BanyanDB.SeriesID(index = 0)
     private String serviceId;
 
     @Setter
     @Getter
     @Column(columnName = NAME, storageOnly = true)
+    @ElasticSearch.Column(columnAlias = "instance_traffic_name")
+    @BanyanDB.SeriesID(index = 1)
     private String name;
 
     @Setter
@@ -126,8 +135,12 @@ public class InstanceTraffic extends Metrics {
     }
 
     @Override
-    protected String id0() {
-        return IDManager.ServiceInstanceID.buildId(serviceId, name);
+    protected StorageID id0() {
+        return new StorageID()
+            .appendMutant(new String[] {
+                SERVICE_ID,
+                NAME
+            }, IDManager.ServiceInstanceID.buildId(serviceId, name));
     }
 
     public static class Builder implements StorageBuilder<InstanceTraffic> {

@@ -36,6 +36,10 @@ public class ElasticSearchExtension {
      */
     private final ElasticSearch.MatchQuery.AnalyzerType analyzer;
 
+    private final String columnAlias;
+
+    private final boolean isKeyword;
+
     public boolean needMatchQuery() {
         return analyzer != null;
     }

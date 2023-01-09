@@ -21,7 +21,7 @@
     <parent>
         <artifactId>oap-server</artifactId>
         <groupId>org.apache.skywalking</groupId>
-        <version>9.2.0-SNAPSHOT</version>
+        <version>9.4.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -166,14 +166,14 @@
             <artifactId>skywalking-ebpf-receiver-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>skywalking-telegraf-receiver-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- receiver module -->
 
         <!-- fetcher module -->
-        <dependency>
-            <groupId>org.apache.skywalking</groupId>
-            <artifactId>prometheus-fetcher-plugin</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>kafka-fetcher-plugin</artifactId>
@@ -195,6 +195,11 @@
         <dependency>
             <groupId>org.apache.skywalking</groupId>
             <artifactId>storage-banyandb-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.skywalking</groupId>
+            <artifactId>storage-shardingsphere-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- storage module -->
@@ -309,11 +314,12 @@
                         <exclude>envoy-metrics-rules/</exclude>
                         <exclude>meter-analyzer-config/</exclude>
                         <exclude>openapi-definitions/</exclude>
-                        <exclude>otel-oc-rules/</exclude>
+                        <exclude>otel-rules/</exclude>
                         <exclude>ui-initialized-templates/</exclude>
                         <exclude>zabbix-rules/</exclude>
                         <exclude>lal/</exclude>
                         <exclude>log-mal-rules/</exclude>
+                        <exclude>telegraf-rules/</exclude>
                     </excludes>
                 </configuration>
             </plugin>

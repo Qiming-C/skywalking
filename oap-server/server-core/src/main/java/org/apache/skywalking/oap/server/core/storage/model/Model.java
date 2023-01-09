@@ -36,9 +36,10 @@ public class Model {
     private final boolean record;
     private final boolean superDataset;
     private final boolean isTimeSeries;
-    private final String aggregationFunctionName;
+    private final Class<?> streamClass;
     private final boolean timeRelativeID;
     private final SQLDatabaseModelExtension sqlDBModelExtension;
+    private final BanyanDBModelExtension banyanDBModelExtension;
 
     public Model(final String name,
                  final List<ModelColumn> columns,
@@ -46,9 +47,10 @@ public class Model {
                  final DownSampling downsampling,
                  final boolean record,
                  final boolean superDataset,
-                 final String aggregationFunctionName,
+                 final Class<?> streamClass,
                  boolean timeRelativeID,
-                 final SQLDatabaseModelExtension sqlDBModelExtension) {
+                 final SQLDatabaseModelExtension sqlDBModelExtension,
+                 final BanyanDBModelExtension banyanDBModelExtension) {
         this.name = name;
         this.columns = columns;
         this.scopeId = scopeId;
@@ -56,8 +58,9 @@ public class Model {
         this.isTimeSeries = !DownSampling.None.equals(downsampling);
         this.record = record;
         this.superDataset = superDataset;
-        this.aggregationFunctionName = aggregationFunctionName;
+        this.streamClass = streamClass;
         this.timeRelativeID = timeRelativeID;
         this.sqlDBModelExtension = sqlDBModelExtension;
+        this.banyanDBModelExtension = banyanDBModelExtension;
     }
 }

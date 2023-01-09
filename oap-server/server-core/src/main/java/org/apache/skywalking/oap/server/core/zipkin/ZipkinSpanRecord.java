@@ -19,8 +19,10 @@
 package org.apache.skywalking.oap.server.core.zipkin;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.skywalking.oap.server.core.Const;
@@ -28,6 +30,8 @@ import org.apache.skywalking.oap.server.core.analysis.Stream;
 import org.apache.skywalking.oap.server.core.analysis.record.Record;
 import org.apache.skywalking.oap.server.core.analysis.worker.RecordStreamProcessor;
 import org.apache.skywalking.oap.server.core.source.DefaultScopeDefine;
+import org.apache.skywalking.oap.server.core.storage.ShardingAlgorithm;
+import org.apache.skywalking.oap.server.core.storage.StorageID;
 import org.apache.skywalking.oap.server.core.storage.annotation.BanyanDB;
 import org.apache.skywalking.oap.server.core.storage.annotation.Column;
 import org.apache.skywalking.oap.server.core.storage.annotation.SQLDatabase;
@@ -37,11 +41,20 @@ import org.apache.skywalking.oap.server.core.storage.type.Convert2Storage;
 import org.apache.skywalking.oap.server.core.storage.type.StorageBuilder;
 import org.apache.skywalking.oap.server.library.util.BooleanUtils;
 import org.apache.skywalking.oap.server.library.util.StringUtil;
+import zipkin2.Endpoint;
+import zipkin2.Span;
+
+import static org.apache.skywalking.oap.server.core.analysis.manual.segment.SegmentRecord.TRACE_ID;
+import static org.apache.skywalking.oap.server.core.analysis.record.Record.TIME_BUCKET;
 
 @SuperDataset
 @Stream(name = ZipkinSpanRecord.INDEX_NAME, scopeId = DefaultScopeDefine.ZIPKIN_SPAN, builder = ZipkinSpanRecord.Builder.class, processor = RecordStreamProcessor.class)
+@SQLDatabase.ExtraColumn4AdditionalEntity(additionalTable = ZipkinSpanRecord.ADDITIONAL_QUERY_TABLE, parentColumn = TIME_BUCKET)
+@SQLDatabase.Sharding(shardingAlgorithm = ShardingAlgorithm.TIME_SEC_RANGE_SHARDING_ALGORITHM, dataSourceShardingColumn = TRACE_ID, tableShardingColumn = TIME_BUCKET)
+@BanyanDB.TimestampColumn(ZipkinSpanRecord.TIMESTAMP_MILLIS)
 public class ZipkinSpanRecord extends Record {
     private static final Gson GSON = new Gson();
+    public static final int QUERY_LENGTH = 256;
     public static final String INDEX_NAME = "zipkin_span";
     public static final String ADDITIONAL_QUERY_TABLE = "zipkin_query";
     public static final String TRACE_ID = "trace_id";
@@ -69,10 +82,13 @@ public class ZipkinSpanRecord extends Record {
     @Setter
     @Getter
     @Column(columnName = TRACE_ID)
+    @SQLDatabase.AdditionalEntity(additionalTables = {ADDITIONAL_QUERY_TABLE}, reserveOriginalColumns = true)
+    @BanyanDB.SeriesID(index = 0)
     private String traceId;
     @Setter
     @Getter
     @Column(columnName = SPAN_ID)
+    @BanyanDB.SeriesID(index = 1)
     private String spanId;
     @Setter
     @Getter
@@ -101,7 +117,6 @@ public class ZipkinSpanRecord extends Record {
     @Setter
     @Getter
     @Column(columnName = LOCAL_ENDPOINT_SERVICE_NAME)
-    @BanyanDB.ShardingKey(index = 0)
     private String localEndpointServiceName;
     @Setter
     @Getter
@@ -149,13 +164,13 @@ public class ZipkinSpanRecord extends Record {
     private int shared;
     @Setter
     @Getter
-    @Column(columnName = QUERY, indexOnly = true)
+    @Column(columnName = QUERY, indexOnly = true, length = QUERY_LENGTH)
     @SQLDatabase.AdditionalEntity(additionalTables = {ADDITIONAL_QUERY_TABLE})
     private List<String> query;
 
     @Override
-    public String id() {
-        return traceId + "-" + spanId;
+    public StorageID id() {
+        return new StorageID().append(TRACE_ID, traceId).append(SPAN_ID, spanId);
     }
 
     public static class Builder implements StorageBuilder<ZipkinSpanRecord> {
@@ -208,6 +223,7 @@ public class ZipkinSpanRecord extends Record {
             converter.accept(KIND, storageData.getKind());
             converter.accept(TIMESTAMP, storageData.getTimestamp());
             converter.accept(TIMESTAMP_MILLIS, storageData.getTimestampMillis());
+            converter.accept(TIME_BUCKET, storageData.getTimeBucket());
             converter.accept(DURATION, storageData.getDuration());
             converter.accept(LOCAL_ENDPOINT_SERVICE_NAME, storageData.getLocalEndpointServiceName());
             converter.accept(LOCAL_ENDPOINT_IPV4, storageData.getLocalEndpointIPV4());
@@ -239,5 +255,52 @@ public class ZipkinSpanRecord extends Record {
                 converter.accept(SHARED, storageData.getShared());
             }
         }
+    }
+
+    public static Span buildSpanFromRecord(ZipkinSpanRecord record) {
+        Span.Builder span = Span.newBuilder();
+        span.traceId(record.getTraceId());
+        span.id(record.getSpanId());
+        span.parentId(record.getParentId());
+        span.kind(Span.Kind.valueOf(record.getKind()));
+        span.timestamp(record.getTimestamp());
+        span.duration(record.getDuration());
+        span.name(record.getName());
+        //Build localEndpoint
+        Endpoint.Builder localEndpoint = Endpoint.newBuilder();
+        localEndpoint.serviceName(record.getLocalEndpointServiceName());
+        if (!StringUtil.isEmpty(record.getLocalEndpointIPV4())) {
+            localEndpoint.parseIp(record.getLocalEndpointIPV4());
+        } else {
+            localEndpoint.parseIp(record.getLocalEndpointIPV6());
+        }
+        localEndpoint.port(record.getLocalEndpointPort());
+        span.localEndpoint(localEndpoint.build());
+        //Build remoteEndpoint
+        Endpoint.Builder remoteEndpoint = Endpoint.newBuilder();
+        remoteEndpoint.serviceName(record.getRemoteEndpointServiceName());
+        if (!StringUtil.isEmpty(record.getLocalEndpointIPV4())) {
+            remoteEndpoint.parseIp(record.getRemoteEndpointIPV4());
+        } else {
+            remoteEndpoint.parseIp(record.getRemoteEndpointIPV6());
+        }
+        remoteEndpoint.port(record.getRemoteEndpointPort());
+        span.remoteEndpoint(remoteEndpoint.build());
+
+        //Build tags
+        JsonObject tagsJson = record.getTags();
+        if (tagsJson != null) {
+            for (Map.Entry<String, JsonElement> tag : tagsJson.entrySet()) {
+                span.putTag(tag.getKey(), tag.getValue().getAsString());
+            }
+        }
+        //Build annotation
+        JsonObject annotationJson = record.getAnnotations();
+        if (annotationJson != null) {
+            for (Map.Entry<String, JsonElement> annotation : annotationJson.entrySet()) {
+                span.addAnnotation(Long.parseLong(annotation.getKey()), annotation.getValue().getAsString());
+            }
+        }
+        return span.build();
     }
 }
