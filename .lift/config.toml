@@ -1,7 +1,7 @@
 jdk11 = true
 ignoreRules = [ "THREAD_SAFETY_VIOLATION", "MissingSummary", "SameNameButDifferent", "NonAtomicVolatileUpdate", "EqualsGetClass"]
 setup = ".lift/setup.sh"
-tools = [  "infer", "Bill Of Materials"]
+tools = [ "Bill Of Materials", "infer"]
 ignoreFiles = """
 skywalking-ui/**
 **/target/**
