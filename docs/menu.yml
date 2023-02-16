@@ -117,6 +117,8 @@ catalog:
             path: "/en/guides/backend-oal-scripts"
           - name: "OpenTelemetry Metrics"
             path: "/en/setup/backend/opentelemetry-receiver"
+          - name: "AWS CloudWatch Metrics"
+            path: "/en/setup/backend/aws-firehose-receiver"
           - name: "Zabbix Metrics"
             path: "/en/setup/backend/backend-zabbix"
           - name: "Meter Analysis"
@@ -161,8 +163,10 @@ catalog:
                 path: "/en/setup/service-agent/virtual-mq"
           - name: "Service Mesh"
             catalog:
-              - name: "Observe Service Mesh"
+              - name: "Observe Service Mesh through Access Log Service (ALS)"
                 path: "/en/setup/envoy/als_setting"
+              - name: "Observe Service Mesh through Zipkin traces"
+                path: "/en/setup/zipkin/tracing"
               - name: "Observe Control Plane (Istio)"
                 path: "/en/setup/istio/readme"
               - name: "Observe Data Plane (Envoy)"
@@ -179,6 +183,8 @@ catalog:
             catalog:
               - name: "Linux Monitoring"
                 path: "/en/setup/backend/backend-vm-monitoring"
+              - name: "Windows Monitoring"
+                path: "/en/setup/backend/backend-win-monitoring"
           - name: "AWS Cloud Monitoring"
             catalog:
               - name: "EKS Monitoring"
@@ -243,6 +249,8 @@ catalog:
             path: "/en/api/instance-properties"
           - name: "Event"
             path: "/en/api/event"
+          - name: "Profiling"
+            path: "/en/api/profiling-protocol"
       - name: "Query APIs"
         catalog:
           - name:  "GraphQL APIs"

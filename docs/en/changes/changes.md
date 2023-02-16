@@ -3,6 +3,10 @@
 #### Project
 
 * Bump up Zipkin and Zipkin lens UI dependency to 2.24.0.
+* Bump up Apache parent pom version to 29.
+* Bump up Armeria version to 1.21.0.
+* Clean up maven `pom.xml`s.
+* Bump up Java version to 11.
 
 #### OAP Server
 
@@ -76,15 +80,50 @@
 * [**Breaking Change**] The supported version of ShardingSphere-Proxy is upgraded from 5.1.2 to 5.3.1. Due to the changes of ShardingSphere's API, versions before 5.3.1 are not compatible.
 * Add the eBPF network profiling E2E Test in the per storage.
 * Fix TCP service instances are lack of instance properties like `pod` and `namespace`, which causes Pod log not to work for TCP workloads.
+* Add Python HBase happybase module component ID(94).
+* Fix gRPC alarm cannot update settings from dynamic configuration source.
+* Add `batchOfBytes` configuration to limit the size of bulk flush.
+* Add Python Websocket module component ID(7018).
+* [Optional] Optimize single trace query performance by customizing routing in ElasticSearch. SkyWalking trace segments and Zipkin spans are using trace ID for routing. This is OFF by default, controlled by `storage/elasticsearch/enableCustomRouting`.
+* Enhance OAP HTTP server to support HTTPS
+* Remove handler scan in otel receiver, manual initialization instead
+* Add aws-firehose-receiver to support collecting AWS CloudWatch metric(OpenTelemetry format)
+* Avoid Antlr dependencies' versions might be different in compile time and runtime.
+* Now `PrometheusMetricConverter#escapedName` also support converting `/` to `_`.
+* Add missing TCP throughput metrics.
+* Refactor `@Column` annotation, swap `Column#name` and `ElasticSearch.Column#columnAlias` and rename `ElasticSearch.Column#columnAlias` to `ElasticSearch.Column#legacyName`.
+* Add Python HTTPX module component ID(7019).
+* Migrate tests from junit 4 to junit 5.
 
 #### UI
 
 * Add Zipkin Lens UI to webapp, and proxy it to context path `/zipkin`.
 * Migrate the build tool from vue cli to Vite4.
 * Fix Instance Relation and Endpoint Relation dashboards show up.
-* Add Micrometer icon
-* Update MySQL UI to support MariaDB
-* Add AWS menu for supporting AWS monitoring
+* Add Micrometer icon.
+* Update MySQL UI to support MariaDB.
+* Add AWS menu for supporting AWS monitoring.
+* Add missing FastAPI logo.
+* Update the log details page to support the formatted display of JSON content.
+* Fix build config.
+* Avoid being unable to drag process nodes for the first time.
+* Add node folder into ignore list.
+* Add ElPopconfirm to component types.
+* Add an iframe widget for zipkin UI.
+* Optimize graph tooltips to make them more friendly.
+* Bump json5 from 1.0.1 to 1.0.2.
+* Add websockets icon.
+* Implement independent mode for widgets.
+* Bump http-cache-semantics from 4.1.0 to 4.1.1.
+* Update menus for OpenFunction.
+* Add auto fresh to widgets independent mode.
+* Fix: clear trace ID on the Log and Trace widgets after using association.
+* Fix: reset duration for query conditions after time range changes.
+* Add AWS S3 menu.
+* Refactor: optimize side bar component to make it more friendly.
+* Fix: remove duplicate popup message for query result.
+* Add logo for HTTPX.
+* Refactor: optimize the attached events visualization in the trace widget.
 
 #### Documentation
 
@@ -92,5 +131,9 @@
   enhancement.
 * Update `monitoring MySQL document` to add the `MariaDB` part.
 * Reorganize the protocols docs to a more clear API docs.
+* Add documentation about replacing Zipkin server with SkyWalking OAP.
+* Add Lens UI relative docs in Zipkin trace section.
+* Add Profiling APIs.
+* Fix backend telemetry doc and so11y dashboard doc as the OAP Prometheus fetcher was removed since 9.3.0
 
 All issues and pull requests are [here](https://github.com/apache/skywalking/milestone/160?closed=1)

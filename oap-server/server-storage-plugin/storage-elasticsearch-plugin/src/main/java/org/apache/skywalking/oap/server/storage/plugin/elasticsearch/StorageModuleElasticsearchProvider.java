@@ -185,7 +185,7 @@ public class StorageModuleElasticsearchProvider extends ModuleProvider {
         this.registerServiceImplementation(
             IBatchDAO.class,
             new BatchProcessEsDAO(elasticSearchClient, config.getBulkActions(), config
-                .getFlushInterval(), config.getConcurrentRequests())
+                .getFlushInterval(), config.getConcurrentRequests(), config.getBatchOfBytes())
         );
         this.registerServiceImplementation(StorageDAO.class, new StorageEsDAO(elasticSearchClient));
         this.registerServiceImplementation(
@@ -240,6 +240,7 @@ public class StorageModuleElasticsearchProvider extends ModuleProvider {
         this.registerServiceImplementation(
             ISpanAttachedEventQueryDAO.class, new SpanAttachedEventEsDAO(elasticSearchClient, config));
         IndexController.INSTANCE.setLogicSharding(config.isLogicSharding());
+        IndexController.INSTANCE.setEnableCustomRouting(config.isEnableCustomRouting());
     }
 
     @Override

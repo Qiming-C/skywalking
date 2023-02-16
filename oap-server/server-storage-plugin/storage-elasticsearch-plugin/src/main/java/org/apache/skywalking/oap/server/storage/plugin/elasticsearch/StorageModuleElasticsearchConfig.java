@@ -88,6 +88,8 @@ public class StorageModuleElasticsearchConfig extends ModuleConfig {
      * @since 8.7.0 This setting affects all traces/logs/metrics/metadata flush policy.
      */
     private int bulkActions = 5000;
+
+    private int batchOfBytes = 1024 * 1024 * 10;
     /**
      * Period of flush, no matter `bulkActions` reached or not.
      * Unit is second.
@@ -154,4 +156,9 @@ public class StorageModuleElasticsearchConfig extends ModuleConfig {
      * @since 9.2.0
      */
     private boolean logicSharding = false;
+
+    /**
+     * if enabled, custom routing values will be used, to reduce the number of shards that need to be searched.
+     */
+    private boolean enableCustomRouting = false;
 }

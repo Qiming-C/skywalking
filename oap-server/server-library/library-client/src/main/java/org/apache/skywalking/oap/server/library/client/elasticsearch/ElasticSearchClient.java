@@ -348,8 +348,13 @@ public class ElasticSearchClient implements Client, HealthCheckable {
 
     public IndexRequestWrapper prepareInsert(String indexName, String id,
                                              Map<String, Object> source) {
+        return prepareInsert(indexName, id, Optional.empty(), source);
+    }
+
+    public IndexRequestWrapper prepareInsert(String indexName, String id, Optional<String> routingValue,
+                                             Map<String, Object> source) {
         indexName = indexNameConverter.apply(indexName);
-        return new IndexRequestWrapper(indexName, TYPE, id, source);
+        return new IndexRequestWrapper(indexName, TYPE, id, routingValue, source);
     }
 
     public UpdateRequestWrapper prepareUpdate(String indexName, String id,
@@ -360,9 +365,11 @@ public class ElasticSearchClient implements Client, HealthCheckable {
 
     public BulkProcessor createBulkProcessor(int bulkActions,
                                              int flushInterval,
-                                             int concurrentRequests) {
+                                             int concurrentRequests,
+                                             int batchOfBytes) {
         return BulkProcessor.builder()
                             .bulkActions(bulkActions)
+                            .batchOfBytes(batchOfBytes)
                             .flushInterval(Duration.ofSeconds(flushInterval))
                             .concurrentRequests(concurrentRequests)
                             .build(es);

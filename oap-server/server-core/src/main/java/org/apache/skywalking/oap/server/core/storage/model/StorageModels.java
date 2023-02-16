@@ -60,6 +60,7 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
         ShardingKeyChecker checker = new ShardingKeyChecker();
         SQLDatabaseModelExtension sqlDBModelExtension = new SQLDatabaseModelExtension();
         BanyanDBModelExtension banyanDBModelExtension = new BanyanDBModelExtension();
+        ElasticSearchModelExtension elasticSearchModelExtension = new ElasticSearchModelExtension();
         retrieval(aClass, storage.getModelName(), modelColumns, scopeId, checker, sqlDBModelExtension, record);
         // Add extra column for additional entities
         if (aClass.isAnnotationPresent(SQLDatabase.ExtraColumn4AdditionalEntity.class)
@@ -96,7 +97,9 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
         if (aClass.isAnnotationPresent(BanyanDB.StoreIDAsTag.class)) {
             banyanDBModelExtension.setStoreIDTag(true);
         }
-
+        // Set routing rules for ElasticSearch
+        elasticSearchModelExtension.setRouting(storage.getModelName(), modelColumns);
+        
         checker.check(storage.getModelName());
 
         Model model = new Model(
@@ -109,7 +112,8 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
             aClass,
             storage.isTimeRelativeID(),
             sqlDBModelExtension,
-            banyanDBModelExtension
+            banyanDBModelExtension,
+            elasticSearchModelExtension
         );
 
         this.followColumnNameRules(model);
@@ -181,7 +185,7 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
 
                 indexDefinitions.forEach(indexDefinition -> {
                     sqlDatabaseExtension.appendIndex(new SQLDatabaseExtension.MultiColumnsIndex(
-                        column.columnName(),
+                        column.name(),
                         indexDefinition.withColumns()
                     ));
                 });
@@ -191,10 +195,12 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
                     ElasticSearch.MatchQuery.class);
                 final ElasticSearch.Column elasticSearchColumn = field.getAnnotation(ElasticSearch.Column.class);
                 final ElasticSearch.Keyword keywordColumn = field.getAnnotation(ElasticSearch.Keyword.class);
+                final ElasticSearch.Routing routingColumn = field.getAnnotation(ElasticSearch.Routing.class);
                 ElasticSearchExtension elasticSearchExtension = new ElasticSearchExtension(
                     elasticSearchAnalyzer == null ? null : elasticSearchAnalyzer.analyzer(),
-                    elasticSearchColumn == null ? null : elasticSearchColumn.columnAlias(),
-                    keywordColumn != null
+                    elasticSearchColumn == null ? null : elasticSearchColumn.legacyName(),
+                    keywordColumn != null,
+                    routingColumn != null
                 );
 
                 // BanyanDB extension
@@ -217,10 +223,7 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
                 );
 
                 final ModelColumn modelColumn = new ModelColumn(
-                    new ColumnName(
-                        modelName,
-                        column.columnName()
-                    ),
+                    new ColumnName(column),
                     field.getType(),
                     field.getGenericType(),
                     column.storageOnly(),
@@ -247,12 +250,12 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
 
                 modelColumns.add(modelColumn);
                 if (log.isDebugEnabled()) {
-                    log.debug("The field named [{}] with the [{}] type", column.columnName(), field.getType());
+                    log.debug("The field named [{}] with the [{}] type", column.name(), field.getType());
                 }
                 if (column.dataType().isValue()) {
                     ValueColumnMetadata.INSTANCE.putIfAbsent(
-                        modelName, column.columnName(), column.dataType(), column.function(),
-                        column.defaultValue(), scopeId
+                        modelName, column.name(),
+                        column.dataType(), column.function(), column.defaultValue(), scopeId
                     );
                 }
             }
@@ -284,6 +287,7 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
     private void followColumnNameRules(Model model) {
         columnNameOverrideRule.forEach((oldName, newName) -> {
             model.getColumns().forEach(column -> {
+                log.debug("Override model column name: [{}] {} -> {}.", model.getName(), oldName, newName);
                 column.getColumnName().overrideName(oldName, newName);
                 column.getSqlDatabaseExtension()
                       .getIndices()
@@ -311,8 +315,8 @@ public class StorageModels implements IModelManager, ModelCreator, ModelManipula
         return models;
     }
 
-    private class ShardingKeyChecker {
-        private ArrayList<ModelColumn> keys = new ArrayList<>();
+    private static class ShardingKeyChecker {
+        private final ArrayList<ModelColumn> keys = new ArrayList<>();
 
         /**
          * @throws IllegalStateException if sharding key indices are conflicting.
